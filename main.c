@@ -3,8 +3,10 @@
  * author: Xu He Jie xuhj@cn.ibm.com
  */
 #include <stdio.h>
+#include <unistd.h>
 #include <memory.h>
 #include <sys/mman.h>
+#include <sys/ioctl.h>
 #include <pthread.h>
 #include <linux/kvm.h>
 #include <fcntl.h>
@@ -250,7 +252,6 @@ void kvm_run_vm(struct kvm *kvm) {
 }
 
 int main(int argc, char **argv) {
-    int ret = 0;
     struct kvm *kvm = kvm_init();
 
     if (kvm == NULL) {
