@@ -116,6 +116,9 @@ void *kvm_cpu_thread(void *data)
 			printf("KVM_EXIT_SHUTDOWN\n");
 			goto exit_kvm;
 			break;
+		case KVM_EXIT_INTERNAL_ERROR:
+			printf("KVM_EXIT_INTERNAL_ERROR\n");
+			break;
 		default:
 			printf("KVM PANIC\n");
 			goto exit_kvm;
@@ -154,6 +157,28 @@ int main(int argc, char **argv)
 	kvm->vcpus->kvm_run_mmap_size = ioctl(kvm->dev_fd, KVM_GET_VCPU_MMAP_SIZE, 0);
 	kvm->vcpus->kvm_run = mmap(NULL, kvm->vcpus->kvm_run_mmap_size,
 			PROT_READ | PROT_WRITE, MAP_SHARED, kvm->vcpus->vcpu_fd, 0);
+#if 0
+	kvm_reset_vcpu(kvm->vcpus);
+	while (1) {
+		ioctl(kvm->vcpus->vcpu_fd, KVM_RUN, 0);
+
+		switch (kvm->vcpus->kvm_run->exit_reason) {
+		case KVM_EXIT_INTERNAL_ERROR:
+			printf("internal_error\n");
+			break;
+		case KVM_EXIT_IO:
+			printf("port: %d, data: %d\n", kvm->vcpus->kvm_run->io.port,
+						*(int *)((char *)(kvm->vcpus->kvm_run) + kvm->vcpus->kvm_run->io.data_offset));
+			sleep(1);
+			break;
+		case KVM_EXIT_HLT:
+			printf("halt\n");
+			return 0;
+		default:
+			printf("exit_reason: 0x%x\n", kvm->vcpus->kvm_run->exit_reason);
+		}
+	}
+#else
 	kvm->vcpus->vcpu_thread_func = kvm_cpu_thread;
 
 	for (i = 0; i < kvm->vcpu_number; i++) {
@@ -161,6 +186,7 @@ int main(int argc, char **argv)
 			kvm->vcpus[i].vcpu_thread_func, kvm);
 		pthread_join(kvm->vcpus->vcpu_thread, NULL);
 	}
+#endif
 
 	//exit
 	munmap((void *)kvm->ram_start, kvm->ram_size);
